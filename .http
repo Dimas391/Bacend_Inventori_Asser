@@ -1,0 +1,35 @@
+### debug-404.http
+@baseUrl = http://localhost:3000
+
+### Test 1: Health endpoint
+GET {{baseUrl}}/health
+
+### Test 2: Login endpoint dengan path berbeda
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "irwanaiwan049@gmail.com",
+  "password": "test123"
+}
+
+### Test 3: Coba tanpa /api prefix
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com", 
+  "password": "test123"
+}
+
+### Test 4: Test base auth endpoint
+GET {{baseUrl}}/api/auth
+
+### Test 5: Test dengan trailing slash
+POST {{baseUrl}}/api/auth/login/
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "test123"
+}
