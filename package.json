@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "nodemon --exec ts-node ./server.ts",
-    "build": "npm run build --force",
+    "build": "npm run build",
     "test": "jest",
     "migrate": "ts-node scripts/migrate.ts",
     "migrate:prod": "node dist/scripts/migrate.js"
