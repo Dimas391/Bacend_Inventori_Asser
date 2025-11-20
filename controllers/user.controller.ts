@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
 interface User extends RowDataPacket {

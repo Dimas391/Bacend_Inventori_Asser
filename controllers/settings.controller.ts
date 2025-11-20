@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import pool from '../config/database'; // Asumsi mysql2 pool
 import { RowDataPacket } from 'mysql2';
 import { createObjectCsvWriter } from 'csv-writer'; // Untuk export CSV
