@@ -19,59 +19,73 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-// RECREATE ALL TABLES dengan AUTO_INCREMENT
+// CREATE ALL REQUIRED TABLES
 (async () => {
   const conn = await pool.getConnection();
   try {
-    console.log('🔄 RECREATING ALL DATABASE TABLES...');
+    console.log('🔄 CREATING ALL DATABASE TABLES...');
 
-    // 1. Activity Log table
-    await conn.query('DROP TABLE IF EXISTS activity_log');
-    await conn.query(`
-      CREATE TABLE activity_log (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        action VARCHAR(255) NOT NULL,
-        entity_type VARCHAR(100) NOT NULL,
-        entity_id INT,
-        ip_address VARCHAR(45),
-        user_agent TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('✅ activity_log table created');
+    // 1. Users table
+    // await conn.query('DROP TABLE IF EXISTS users');
+    // await conn.query(`
+    //   CREATE TABLE users (
+    //     id INT AUTO_INCREMENT PRIMARY KEY,
+    //     name VARCHAR(255) NOT NULL,
+    //     email VARCHAR(255) UNIQUE NOT NULL,
+    //     password VARCHAR(255) NOT NULL,
+    //     phone VARCHAR(50),
+    //     role VARCHAR(20) DEFAULT 'User',
+    //     status VARCHAR(20) DEFAULT 'Active',
+    //     department VARCHAR(100),
+    //     email_verified BOOLEAN DEFAULT FALSE,
+    //     verification_token VARCHAR(255),
+    //     token_expiry DATETIME,
+    //     last_login DATETIME,
+    //     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    //     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    //   )
+    // `);
+    // console.log('✅ users table created');
 
-    // 2. Users table  
-    await conn.query('DROP TABLE IF EXISTS users');
+    // 2. Activity Log table (fix missing details column)
+    // await conn.query('DROP TABLE IF EXISTS activity_log');
+    // await conn.query(`
+    //   CREATE TABLE activity_log (
+    //     id INT AUTO_INCREMENT PRIMARY KEY,
+    //     user_id INT NOT NULL,
+    //     action VARCHAR(255) NOT NULL,
+    //     entity_type VARCHAR(100) NOT NULL,
+    //     entity_id INT,
+    //     details JSON,
+    //     ip_address VARCHAR(45),
+    //     user_agent TEXT,
+    //     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    //   )
+    // `);
+    // console.log('✅ activity_log table created');
+
+    // 3. Library Items table
+    await conn.query('DROP TABLE IF EXISTS library_items');
     await conn.query(`
-      CREATE TABLE users (
+      CREATE TABLE library_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        phone VARCHAR(50),
-        role VARCHAR(20) DEFAULT 'User',
-        status VARCHAR(20) DEFAULT 'Active',
-        department VARCHAR(100),
-        email_verified BOOLEAN DEFAULT FALSE,
-        verification_token VARCHAR(255),
-        token_expiry DATETIME,
-        last_login DATETIME,
+        title VARCHAR(255) NOT NULL,
+        type ENUM('document','image','video','audio') NOT NULL,
+        file_size BIGINT NOT NULL,
+        file_path VARCHAR(500) NOT NULL,
+        mime_type VARCHAR(100),
+        uploaded_by INT NOT NULL,
+        description TEXT,
+        tags JSON,
+        downloads INT DEFAULT 0,
+        views INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
-    console.log('✅ users table created');
+    console.log('✅ library_items table created');
 
-    // 3. Insert admin user
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    await conn.query(`
-      INSERT INTO users (name, email, password, role, email_verified, status) 
-      VALUES ('Administrator', 'admin@example.com', ?, 'Admin', TRUE, 'Active')
-    `, [hashedPassword]);
-    console.log('✅ admin user created');
-
-    // 4. Create other tables...
+    // 4. Assets table
     await conn.query('DROP TABLE IF EXISTS assets');
     await conn.query(`
       CREATE TABLE assets (
@@ -97,10 +111,74 @@ const pool = mysql.createPool({
     `);
     console.log('✅ assets table created');
 
-    console.log('🎉 ALL TABLES RECREATED SUCCESSFULLY!');
+    // 5. Device Stocks table
+    await conn.query('DROP TABLE IF EXISTS device_stocks');
+    await conn.query(`
+      CREATE TABLE device_stocks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        category VARCHAR(100) NOT NULL,
+        total_stock INT NOT NULL DEFAULT 0,
+        available_stock INT NOT NULL DEFAULT 0,
+        borrowed_count INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ device_stocks table created');
+
+    // 6. Borrowings table
+    await conn.query('DROP TABLE IF EXISTS borrowings');
+    await conn.query(`
+      CREATE TABLE borrowings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        employee_name VARCHAR(255) NOT NULL,
+        device_id INT NOT NULL,
+        device_name VARCHAR(255) NOT NULL,
+        quantity INT NOT NULL DEFAULT 1,
+        borrow_date DATE NOT NULL,
+        return_date DATE NOT NULL,
+        status ENUM('borrowed','returned') DEFAULT 'borrowed',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ borrowings table created');
+
+    // 7. Chat History table
+    await conn.query('DROP TABLE IF EXISTS chat_history');
+    await conn.query(`
+      CREATE TABLE chat_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        session_id VARCHAR(100) NOT NULL DEFAULT 'default',
+        message TEXT NOT NULL,
+        response TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✅ chat_history table created');
+
+    // 8. Insert admin user
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    await conn.query(`
+      INSERT INTO users (name, email, password, role, email_verified, status) 
+      VALUES ('Administrator', 'admin@example.com', ?, 'Admin', TRUE, 'Active')
+    `, [hashedPassword]);
+    console.log('✅ admin user created');
+
+    // 9. Insert sample data
+    await conn.query(`
+      INSERT INTO device_stocks (name, category, total_stock, available_stock) 
+      VALUES ('Laptop Dell', 'Electronics', 5, 5)
+    `);
+    console.log('✅ sample device stock created');
+
+    console.log('🎉 ALL TABLES CREATED SUCCESSFULLY!');
 
   } catch (error: any) {
-    console.error('❌ Error recreating tables:', error.message);
+    console.error('❌ Error creating tables:', error.message);
   } finally {
     conn.release();
   }
