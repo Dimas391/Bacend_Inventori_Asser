@@ -1,5 +1,5 @@
 ### debug-404.http
-@baseUrl = http://localhost:3000
+@baseUrl = https://bacendinventoriasser-production.up.railway.app
 
 ### Test 1: Health endpoint
 GET {{baseUrl}}/health
