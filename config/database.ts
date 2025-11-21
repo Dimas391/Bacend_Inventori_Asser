@@ -25,28 +25,38 @@ const pool = mysql.createPool({
   connectTimeout: 60000
 });
 
-// Fungsi yang lebih sederhana dan robust
-async function initializeDatabase() {
+async function fixUsersTable() {
   const conn = await pool.getConnection();
   try {
-    console.log('\n🔧 Initializing database...');
+    console.log('\n🔧 Checking users table structure...');
 
-    // Cek dulu apakah tabel users sudah ada
-    const [tables] = await conn.query(`
-      SELECT TABLE_NAME 
-      FROM INFORMATION_SCHEMA.TABLES 
-      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users'
+    // Cek struktur tabel users
+    const [columns] = await conn.query(`
+      SELECT COLUMN_NAME, COLUMN_TYPE, EXTRA 
+      FROM INFORMATION_SCHEMA.COLUMNS 
+      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'id'
     `, [url.pathname.substring(1)]);
 
-    if ((tables as any).length === 0) {
-      console.log('📋 Creating users table...');
+    const idColumn = (columns as any)[0];
+    
+    if (idColumn && !idColumn.EXTRA.includes('auto_increment')) {
+      console.log('⚠️ Users table exists but id column is not AUTO_INCREMENT');
+      console.log('🔄 Recreating users table...');
       
-      // Buat tabel users dengan syntax yang sangat sederhana
+      // Backup data jika ada (optional)
+      const [existingUsers] = await conn.query('SELECT * FROM users');
+      console.log(`📦 Found ${(existingUsers as any).length} existing users`);
+      
+      // Drop table
+      await conn.query('DROP TABLE users');
+      console.log('✅ Old users table dropped');
+      
+      // Create new table dengan AUTO_INCREMENT
       await conn.query(`
         CREATE TABLE users (
-          id INT NOT NULL AUTO_INCREMENT,
+          id INT AUTO_INCREMENT PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
-          email VARCHAR(255) NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL,
           password VARCHAR(255) NOT NULL,
           phone VARCHAR(50),
           role VARCHAR(20) DEFAULT 'User',
@@ -57,15 +67,12 @@ async function initializeDatabase() {
           token_expiry DATETIME,
           last_login DATETIME,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          PRIMARY KEY (id),
-          UNIQUE KEY (email)
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )
       `);
-      console.log('✅ Users table created successfully!');
-
+      console.log('✅ New users table created with AUTO_INCREMENT');
+      
       // Insert admin user
-      console.log('👤 Creating admin user...');
       await conn.query(`
         INSERT INTO users (name, email, password, role, email_verified, status) 
         VALUES (?, ?, ?, 'Admin', TRUE, 'Active')
@@ -75,46 +82,39 @@ async function initializeDatabase() {
         '$2a$10$8K1p/a0dRTlB0Z6bZ8BwE.O4L3J9KXqVYyQnVYHfL8nWJZ5rVYbXa'
       ]);
       console.log('✅ Admin user created');
+      
     } else {
-      console.log('✅ Users table already exists');
+      console.log('✅ Users table structure is correct');
     }
 
-    // Test insert untuk memastikan AUTO_INCREMENT bekerja
+    // Test insert
     console.log('🧪 Testing user insertion...');
     try {
       const [result] = await conn.query(`
         INSERT INTO users (name, email, password) 
         VALUES (?, ?, ?)
-      `, ['Test User', 'test@example.com', '$2a$10$test']);
-      console.log('✅ User insertion test successful');
+      `, ['Test User', 'test' + Date.now() + '@example.com', '$2a$10$test']);
+      console.log('✅ User insertion test successful - AUTO_INCREMENT is working!');
     } catch (error: any) {
-      if (error.code === 'ER_DUP_ENTRY') {
-        console.log('✅ User insertion test (duplicate email expected)');
-      } else {
-        console.log('⚠️ User insertion test:', error.message);
-      }
+      console.log('⚠️ Test insertion:', error.message);
     }
 
   } catch (error: any) {
-    console.error('❌ Database initialization failed:', error.message);
+    console.error('❌ Error fixing users table:', error.message);
   } finally {
     conn.release();
   }
 }
 
-// Handle connection dan initialization
+// Initialize
 pool.getConnection()
   .then(async (connection) => {
     console.log('🎉 Database connected successfully!');
-    
-    await initializeDatabase();
-    
+    await fixUsersTable();
     connection.release();
   })
   .catch((error) => {
     console.error('❌ Database connection failed:', error.message);
   });
-
-
 
 export default pool;
