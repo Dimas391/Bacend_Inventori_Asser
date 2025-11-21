@@ -1,21 +1,21 @@
 -- Simple database schema for Inventory Management System
-
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
-  phone VARCHAR(50) DEFAULT NULL,
-  role ENUM('Admin','Moderator','User') DEFAULT 'User',
-  status ENUM('Active','Inactive') DEFAULT 'Active',
-  department VARCHAR(100) DEFAULT NULL,
+  phone VARCHAR(50) NULL,
+  role VARCHAR(20) DEFAULT 'User',
+  status VARCHAR(20) DEFAULT 'Active',
+  department VARCHAR(100) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  last_login TIMESTAMP NULL DEFAULT NULL,
-  email_verified TINYINT(1) DEFAULT 0,
-  verification_token VARCHAR(255) DEFAULT NULL,
-  token_expiry TIMESTAMP NULL DEFAULT NULL
+  last_login TIMESTAMP NULL,
+  email_verified TINYINT DEFAULT 0,
+  verification_token VARCHAR(255) NULL,
+  token_expiry TIMESTAMP NULL
 );
+
 
 CREATE TABLE IF NOT EXISTS assets (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -106,15 +106,4 @@ CREATE TABLE IF NOT EXISTS sessions (
   token_hash VARCHAR(255) NOT NULL,
   expires_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Insert default admin user (password: admin123)
-INSERT IGNORE INTO users (name, email, password, role, email_verified, status) 
-VALUES (
-  'Administrator', 
-  'admin@example.com', 
-  '$2a$10$8K1p/a0dRTlB0Z6bZ8BwE.O4L3J9KXqVYyQnVYHfL8nWJZ5rVYbXa',
-  'Admin', 
-  TRUE, 
-  'Active'
 );
