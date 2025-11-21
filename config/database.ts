@@ -1,4 +1,4 @@
-// config/database.ts - REPLACE dengan ini
+// config/database.ts - FIXED VERSION
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import fs from 'fs/promises';
@@ -30,9 +30,8 @@ const pool = mysql.createPool({
   keepAliveInitialDelay: 0,
   multipleStatements: true,
   ssl: { rejectUnauthorized: false }, // ⚠️ IMPORTANT for Railway
-  connectTimeout: 60000,
-  acquireTimeout: 60000,
-  timeout: 60000
+  connectTimeout: 60000 // Hanya connectTimeout yang valid
+  // HAPUS: acquireTimeout dan timeout (tidak valid di mysql2)
 });
 
 console.log('✅ Database pool created with config:', {
