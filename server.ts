@@ -71,7 +71,8 @@ app.get('/health', (req: Request, res: Response) => {
 console.log('🔧 Registering routes...');
 
 app.use('/api/auth', (req, res, next) => {
-  console.log(`uth route: ${req.method} ${req.path}`);
+  console.log(`🔐 AUTH ROUTE ACCESSED: ${req.method} ${req.originalUrl}`);
+  console.log(`   Time: ${new Date().toISOString()}`);
   next();
 }, authRoutes);
 
