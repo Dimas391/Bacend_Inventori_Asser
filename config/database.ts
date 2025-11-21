@@ -1,4 +1,4 @@
-// config/database.ts - FIXED VERSION
+// config/database.ts - USE MYSQL_PUBLIC_URL
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import fs from 'fs/promises';
@@ -7,47 +7,45 @@ import path from 'path';
 dotenv.config();
 
 console.log('🔍 Database Configuration:');
-console.log('   MYSQL_URL:', process.env.MYSQL_URL ? '***' : 'Not set');
 
-// Gunakan MYSQL_URL dari environment variables
-const connectionString = process.env.MYSQL_URL || 'mysql://root:ztRelPVAzBCVGaROfEivGWvMphIMWZWd@mysql.railway.internal:3306/railway';
+// GUNAKAN MYSQL_PUBLIC_URL yang berhasil!
+const connectionString = process.env.MYSQL_PUBLIC_URL || 'mysql://root:BajyCIYofgbNHoljCVADzGvoFekpCwvK@maglev.proxy.rlwy.net:28305/railway';
 
-console.log('🔗 Parsing connection string...');
+console.log('🔗 Using MYSQL_PUBLIC_URL...');
 
-// Parse MYSQL_URL
+// Parse connection string
 const url = new URL(connectionString);
 
-const pool = mysql.createPool({
-  host: url.hostname,
-  port: parseInt(url.port) || 3306,
-  user: url.username,
-  password: url.password,
-  database: url.pathname.substring(1), // Remove leading slash
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0,
-  multipleStatements: true,
-  ssl: { rejectUnauthorized: false }, // ⚠️ IMPORTANT for Railway
-  connectTimeout: 60000 // Hanya connectTimeout yang valid
-  // HAPUS: acquireTimeout dan timeout (tidak valid di mysql2)
-});
-
-console.log('✅ Database pool created with config:', {
+console.log('✅ Database config:', {
   host: url.hostname,
   port: url.port,
   user: url.username,
   database: url.pathname.substring(1)
 });
 
-// Test connection dengan better logging
+const pool = mysql.createPool({
+  host: url.hostname,        // maglev.proxy.rlwy.net
+  port: parseInt(url.port),  // 28305
+  user: url.username,        // root
+  password: url.password,    // BajyCIYofgbNHoljCVADzGvoFekpCwvK
+  database: url.pathname.substring(1), // railway
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  ssl: { rejectUnauthorized: false }, // ⚠️ IMPORTANT
+  connectTimeout: 60000
+});
+
+// Test connection
 pool.getConnection()
   .then((connection) => {
-    console.log('✅ Database connected successfully!');
+    console.log('🎉 DATABASE CONNECTED SUCCESSFULLY!');
+    console.log('   Host:', url.hostname);
+    console.log('   Port:', url.port);
+    console.log('   Database:', url.pathname.substring(1));
     
     // Test query
-    return connection.query('SELECT 1 as test_value, NOW() as current_time')
+    return connection.query('SELECT 1 as test_value, NOW() as current_time, VERSION() as version')
       .then(([results]) => {
         console.log('✅ Database test query successful:', results);
         connection.release();
